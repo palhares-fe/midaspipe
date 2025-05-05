@@ -1,0 +1,73 @@
+# Ambiente Virtual Python
+venv/
+.venv/
+*/venv/
+*/.venv/
+env/
+.env/
+*/env/
+*/.env/
+ENV/
+*/ENV/
+env.bak/
+venv.bak/
+
+# Arquivos de Bytecode e Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de configuração/runtime específicos do Python
+*.egg-info/
+.installed.cfg
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+celerybeat-schedule.*
+*.log
+
+# Arquivos de IDEs e Editores
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Dependências do Node.js (IMPORTANTE)
+node_modules/
+*/node_modules/
+
+# Arquivos de Log do Node.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Arquivos de build/distribuição do frontend (IMPORTANTE)
+dist/
+dist-ssr/
+build/
+.output/
+.vite-inspect/
+coverage/
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de Variáveis de Ambiente (MUITO IMPORTANTE)
+.env
+.env.*
+!.env.example
+# Comentar linha abaixo se quiser permitir .env em subpastas (não recomendado)
+*/.env
+*/.env.*
+!*/.env.example
+
+# Arquivos de Teste (dependendo da estrutura)
+.pytest_cache/
+.coverage
+htmlcov/
