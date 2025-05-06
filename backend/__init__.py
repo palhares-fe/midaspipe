@@ -9,7 +9,7 @@ from .extensions import db, rest_api, migrate, cors
 
 # --- Importe os Namespaces da API ---
 from .api.test_ns import test_ns
-from .api.jornada_ns import jornada_ns # Importe o novo namespace também
+from .api.journey_ns import journey_ns # Importe o novo namespace também
 
 load_dotenv()
 
@@ -52,7 +52,7 @@ def create_app():
     rest_api.add_namespace(test_ns, path='/api/test')
     # Você adicionará outros namespaces (users_ns, projects_ns, etc.) aqui depois
     # api.add_namespace(users_ns, path='/api/users')
-    rest_api.add_namespace(jornada_ns, path='/api/jornadas')
+    rest_api.add_namespace(journey_ns, path='/api/journeys')
 
     # --- Rotas Flask Padrão (Opcional) ---
     # Mantenha apenas se fizer sentido ter rotas fora da API RESTX
