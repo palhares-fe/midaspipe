@@ -2,7 +2,7 @@
 
 # Importa a instância 'db' do seu arquivo principal da aplicação Flask.
 # Se 'db' está em 'backend/__init__.py', o import relativo '.' funciona.
-from . import db
+from .extensions import db
 from sqlalchemy.sql import func
 import datetime
 

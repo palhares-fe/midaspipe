@@ -1,27 +1,19 @@
+# backend/__init__.py
+
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_restx import Api # Importe Api do flask_restx
-from flask_cors import CORS # <--- 1. Importe CORS
 from dotenv import load_dotenv
-from flask_migrate import Migrate # Para migrações de banco de dados
 import os
 
-# Importe os namespaces que vamos criar (passo seguinte)
+# --- Importe as INSTÂNCIAS do extensions.py ---
+from .extensions import db, rest_api, migrate, cors
+
+# --- Importe os Namespaces da API ---
 from .api.test_ns import test_ns
+from .api.jornada_ns import jornada_ns # Importe o novo namespace também
 
 load_dotenv()
 
-# Inicialize as extensões fora da função create_app
-db = SQLAlchemy()
-api = Api(  # Crie a instância principal da API RESTX
-    version='1.0',
-    title='MidasPipe API',
-    description='API para o sistema MidasPipe',
-    doc='/api/docs'  # URL para a documentação interativa Swagger UI
-    # prefix='/api' # Opcional: Adiciona /api a TODAS as rotas da API
-                   # Se usar prefix aqui, ajuste o path no add_namespace abaixo
-)
-migrate = Migrate() # Pode inicializar aqui ou dentro da factory
+
 
 
 def create_app():
@@ -42,8 +34,8 @@ def create_app():
 
     # --- Inicializar Extensões com a App ---
     db.init_app(app) # Associa SQLAlchemy com a app
-    api.init_app(app) # Associa Flask-RESTX com a app
-    CORS(app) # <--- 2. Inicialize CORS com a app (configuração básica para dev)
+    rest_api.init_app(app) # Associa Flask-RESTX com a app
+    cors.init_app(app) # <--- 2. Inicialize CORS com a app (configuração básica para dev)
     # Alternativa mais segura para produção (especificando origem):
     # cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5173').split(',') # Exemplo
     # CORS(app, resources={r"/api/*": {"origins": cors_origins}})
@@ -57,9 +49,10 @@ def create_app():
     # --- Registrar Namespaces da API ---
     # O 'path' define o prefixo da URL para todas as rotas DENTRO deste namespace
     # A rota '/hello' dentro de 'test_ns' se tornará '/api/test/hello'
-    api.add_namespace(test_ns, path='/api/test')
+    rest_api.add_namespace(test_ns, path='/api/test')
     # Você adicionará outros namespaces (users_ns, projects_ns, etc.) aqui depois
     # api.add_namespace(users_ns, path='/api/users')
+    rest_api.add_namespace(jornada_ns, path='/api/jornadas')
 
     # --- Rotas Flask Padrão (Opcional) ---
     # Mantenha apenas se fizer sentido ter rotas fora da API RESTX
