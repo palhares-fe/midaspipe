@@ -1,8 +1,9 @@
 # backend/api/journey_ns.py (Arquivo renomeado)
 
-from flask_restx import Namespace, Resource
+from flask_restx import Namespace, Resource, fields
 from ..extensions import db
-from ..models import Journey # Importa o modelo renomeado
+from ..models import Journey, Step, StepConnection # Importa o modelo renomeado
+from flask import request
 
 # Renomeia o namespace
 journey_ns = Namespace('journeys', description='Operações relacionadas a Jornadas (Journeys)')
@@ -59,7 +60,6 @@ class JourneyResource(Resource): # Nome da classe atualizado (opcional)
         # ATUALIZAR retorno se necessário
         return {'id': journey.id, 'nome': journey.name, 'status': journey.status}
 
-
     def delete(self, journey_id): # Parâmetro atualizado
         """Deleta uma Jornada."""
         journey = Journey.query.get_or_404(journey_id) # Usa o modelo Journey
@@ -67,3 +67,98 @@ class JourneyResource(Resource): # Nome da classe atualizado (opcional)
         db.session.delete(journey)
         db.session.commit()
         return '', 204 # Retorno vazio com status 204
+
+@journey_ns.route('/<int:journey_id>/workflow')
+class JourneyWorkflow(Resource):
+    def get(self, journey_id):
+        """Get the complete workflow data for a journey"""
+        journey = Journey.query.get_or_404(journey_id)
+        
+        # Get all steps
+        steps = Step.query.filter_by(journey_id=journey_id).all()
+        
+        # Get all connections
+        connections = StepConnection.query.filter_by(journey_id=journey_id).all()
+        
+        return {
+            'nodes': [{
+                'id': str(step.id),
+                'type': step.type,
+                'position': {'x': step.pos_x, 'y': step.pos_y},
+                'data': {
+                    'label': step.name,
+                    'type': step.type,
+                    'budget': float(step.budget) if step.budget else None,
+                    'status': step.status,
+                    'description': step.description,
+                    'channel': step.channel,
+                    'date_start': step.date_start.isoformat() if step.date_start else None,
+                    'date_end': step.date_end.isoformat() if step.date_end else None,
+                }
+            } for step in steps],
+            'edges': [{
+                'id': f'e{conn.id}',
+                'source': str(conn.source_step_id),
+                'target': str(conn.target_step_id),
+                'type': 'smoothstep'
+            } for conn in connections]
+        }
+
+    def post(self, journey_id):
+        """Update the workflow layout"""
+        journey = Journey.query.get_or_404(journey_id)
+        data = request.json
+        
+        # Update node positions
+        for node in data.get('nodes', []):
+            step = Step.query.get(int(node['id']))
+            if step and step.journey_id == journey_id:
+                step.pos_x = node['position']['x']
+                step.pos_y = node['position']['y']
+        
+        # Update connections
+        # First, remove all existing connections
+        StepConnection.query.filter_by(journey_id=journey_id).delete()
+        
+        # Then, add new connections
+        for edge in data.get('edges', []):
+            connection = StepConnection(
+                source_step_id=int(edge['source']),
+                target_step_id=int(edge['target']),
+                journey_id=journey_id
+            )
+            db.session.add(connection)
+        
+        db.session.commit()
+        return {'message': 'Workflow updated successfully'}
+
+@journey_ns.route('/<int:journey_id>/steps')
+class JourneySteps(Resource):
+    def post(self, journey_id):
+        """Add a new step to the journey"""
+        journey = Journey.query.get_or_404(journey_id)
+        data = request.json
+        
+        new_step = Step(
+            name=data.get('name'),
+            description=data.get('description'),
+            type=data.get('type'),
+            channel=data.get('channel'),
+            budget=data.get('budget'),
+            pos_x=data.get('pos_x', 0),
+            pos_y=data.get('pos_y', 0),
+            journey_id=journey_id
+        )
+        
+        db.session.add(new_step)
+        db.session.commit()
+        
+        return {
+            'id': new_step.id,
+            'name': new_step.name,
+            'type': new_step.type,
+            'channel': new_step.channel,
+            'budget': float(new_step.budget) if new_step.budget else None,
+            'pos_x': new_step.pos_x,
+            'pos_y': new_step.pos_y
+        }, 201

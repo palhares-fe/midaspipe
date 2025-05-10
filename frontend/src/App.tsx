@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg'; // Se estiver usando Vite >= 4
 import './App.css';
+import WorkflowTest from './components/WorkflowTest';
 
 // Interface para tipar os dados esperados da API (bom para TypeScript)
 interface ApiResponse {
@@ -55,7 +56,8 @@ function App() {
   }, []); // O array vazio [] garante que o useEffect rode apenas uma vez (ao montar)
 
   return (
-    <>
+    <div className="App">
+      <WorkflowTest />
       <div>
         <a href="https://vitejs.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
@@ -90,7 +92,7 @@ function App() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
 

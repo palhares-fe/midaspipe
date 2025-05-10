@@ -37,6 +37,9 @@ class Journey(db.Model): # Renomeado de Jornada
     # Relacionamento atualizado ('Step', back_populates='journey')
     steps = db.relationship('Step', back_populates='journey', lazy=True, cascade="all, delete-orphan")
 
+    # Add this to your existing relationships
+    step_connections = db.relationship('StepConnection', back_populates='journey', cascade="all, delete-orphan")
+
     def __repr__(self):
         return f'<Journey {self.id}: {self.name}>'
 
@@ -67,8 +70,15 @@ class Step(db.Model): # Renomeado de Passo
     # Relacionamento atualizado ('Cost', back_populates='step')
     costs = db.relationship('Cost', back_populates='step', lazy='dynamic', cascade="all, delete-orphan")
 
+    # Add connections relationships
+    outgoing_connections = db.relationship('StepConnection', foreign_keys='StepConnection.source_step_id', back_populates='source_step', cascade="all, delete-orphan")
+    incoming_connections = db.relationship('StepConnection', foreign_keys='StepConnection.target_step_id', back_populates='target_step', cascade="all, delete-orphan")
+
+    # Commenting out metrics relationship temporarily
+    # metrics = db.relationship('Metric', back_populates='step', lazy='dynamic', cascade="all, delete-orphan")
+
     def __repr__(self):
-        return f'<Step {self.id}: {self.name} ({self.typo})>'
+        return f'<Step {self.id}: {self.name} ({self.type})>'
 
 class Cost(db.Model): # Renomeado de Custo
     __tablename__ = 'costs' # Renomeado de custos
@@ -93,3 +103,19 @@ class Cost(db.Model): # Renomeado de Custo
 
     def __repr__(self):
         return f'<Cost {self.id}: {self.cost_type} - {self.value}>'
+
+class StepConnection(db.Model):
+    __tablename__ = 'step_connections'
+    id = db.Column(db.Integer, primary_key=True)
+    source_step_id = db.Column(db.Integer, db.ForeignKey('steps.id'), nullable=False)
+    target_step_id = db.Column(db.Integer, db.ForeignKey('steps.id'), nullable=False)
+    journey_id = db.Column(db.Integer, db.ForeignKey('journeys.id'), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    source_step = db.relationship('Step', foreign_keys=[source_step_id], back_populates='outgoing_connections')
+    target_step = db.relationship('Step', foreign_keys=[target_step_id], back_populates='incoming_connections')
+    journey = db.relationship('Journey', back_populates='step_connections')
+
+    def __repr__(self):
+        return f'<StepConnection {self.source_step_id} -> {self.target_step_id}>'
