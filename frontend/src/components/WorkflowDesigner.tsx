@@ -14,6 +14,57 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import './WorkflowDesigner.css';
+import type { NodeChange } from 'reactflow';
+
+interface NodeData {
+  label: string;
+  type: string;
+  channel: string;
+  budget: number;
+  description?: string;
+}
+
+// Componentes personalizados para cada tipo de node
+const DefaultNode = ({ data }: {data: NodeData}) => (
+  <div className="custom-node default-node">
+    <strong>{data.label}</strong>
+    <div>Type: {data.type}</div>
+    <div>Channel: {data.channel}</div>
+    <div>Budget: ${data.budget}</div>
+  </div>
+);
+
+const AdNode = ({ data }: {data: NodeData}) => (
+  <div className="custom-node ad-node" style={{ border: '2px solid #f90', background: '#fffbe6' }}>
+    <strong>Ad: {data.label}</strong>
+    <div>Channel: {data.channel}</div>
+    <div>Budget: ${data.budget}</div>
+  </div>
+);
+
+const PostNode = ({ data }: {data: NodeData}) => (
+  <div className="custom-node post-node" style={{ border: '2px solid #09f', background: '#e6f7ff' }}>
+    <strong>Post: {data.label}</strong>
+    <div>Channel: {data.channel}</div>
+    <div>Budget: ${data.budget}</div>
+  </div>
+);
+
+const CampaignNode = ({ data }: {data: NodeData}) => (
+  <div className="custom-node campaign-node" style={{ border: '2px solid #0a0', background: '#e6ffe6' }}>
+    <strong>Campaign: {data.label}</strong>
+    <div>Channel: {data.channel}</div>
+    <div>Budget: ${data.budget}</div>
+  </div>
+);
+
+// Registro dos tipos de node
+const nodeTypes = {
+  default: DefaultNode,
+  ad: AdNode,
+  post: PostNode,
+  campaign: CampaignNode,
+};
 
 interface Journey {
   id: number;
@@ -44,6 +95,7 @@ interface ContextMenuProps {
   type: 'node' | 'edge';
 }
 
+
 const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onEdit, onDelete, type }) => {
   return (
     <div className="context-menu" style={{ left: x, top: y }}>
@@ -51,6 +103,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, onEdit, onDele
         <button onClick={onEdit}>Edit Step</button>
       )}
       <button onClick={onDelete}>Delete {type === 'node' ? 'Step' : 'Connection'}</button>
+      <button onClick={onClose}>Close</button>
     </div>
   );
 };
@@ -104,6 +157,7 @@ const WorkflowDesigner: React.FC = () => {
       console.log('Workflow Response:', workflowData);
 
       setNodes(workflowData.nodes);
+      console.log('edges:', workflowData.edges);
       setEdges(workflowData.edges);
       setLoading(false);
     } catch (err) {
@@ -111,7 +165,7 @@ const WorkflowDesigner: React.FC = () => {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setLoading(false);
     }
-  }, [id]);
+  }, [id, setNodes, setEdges, setLoading, setError]);
 
   useEffect(() => {
     fetchWorkflowData();
@@ -218,7 +272,7 @@ const WorkflowDesigner: React.FC = () => {
       // Add the new node to the workflow
       const newNode: Node = {
         id: newStep.id.toString(),
-        type: 'default',
+        type: newStep.type,
         position: { x: newStep.pos_x, y: newStep.pos_y },
         data: {
           label: newStep.name,
@@ -227,7 +281,7 @@ const WorkflowDesigner: React.FC = () => {
           budget: newStep.budget,
         },
       };
-
+      
       setNodes((nds) => [...nds, newNode]);
       setShowAddStepModal(false);
       setNewStepData({
@@ -243,6 +297,37 @@ const WorkflowDesigner: React.FC = () => {
     }
   };
 
+  interface NodePositionUpdate {
+    id: string;
+    position: { x: number; y: number };
+  }
+
+  interface EdgeUpdate {
+    source: string;
+    target: string;
+  }
+
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
+
+  useEffect(() => {
+  if (!unsavedChanges) return;
+
+  const timeout = setTimeout(() => {
+    handleSave();
+  }, 60000); // 1 minuto
+
+  return () => clearTimeout(timeout);
+  }, [unsavedChanges, nodes, edges]);
+
+  const onNodesChangeHandler = useCallback(
+    (changes: NodeChange[]) => {
+      onNodesChange(changes);
+      setUnsavedChanges(true);
+    },
+    [onNodesChange]
+  );
+
+  
   const handleSave = async () => {
     try {
       const method = id === 'new' ? 'POST' : 'PUT';
@@ -277,6 +362,8 @@ const WorkflowDesigner: React.FC = () => {
         throw new Error('Failed to save journey');
       }
 
+      setUnsavedChanges(false);
+      
       const data = await response.json();
       if (id === 'new') {
         navigate(`/journey/${data.id}`);
@@ -287,18 +374,19 @@ const WorkflowDesigner: React.FC = () => {
     }
   };
 
+  
   const handleDeleteNode = async (nodeId: string) => {
     try {
       if (!id || id === 'new') return;
-
+      
       const response = await fetch(`http://localhost:5000/api/journeys/${id}/steps/${nodeId}`, {
         method: 'DELETE',
       });
-
+      
       if (!response.ok) {
         throw new Error('Failed to delete step');
       }
-
+      
       setNodes((nds) => nds.filter((n) => n.id !== nodeId));
       setContextMenu(null);
     } catch (err) {
@@ -306,7 +394,7 @@ const WorkflowDesigner: React.FC = () => {
       setError(err instanceof Error ? err.message : 'Failed to delete step');
     }
   };
-
+  
   const handleDeleteEdge = async (edgeId: string) => {
     try {
       if (!id || id === 'new') return;
@@ -352,15 +440,20 @@ const WorkflowDesigner: React.FC = () => {
     }
   };
 
+  
+
+
   if (loading) return <div className="loading">Loading workflow...</div>;
   if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="workflow-designer">
       <ReactFlow
+        style={{ width: '100vw', height: '100vh' }}
         nodes={nodes}
         edges={edges}
-        onNodesChange={onNodesChange}
+        nodeTypes={nodeTypes}
+        onNodesChange={onNodesChangeHandler}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
@@ -374,17 +467,15 @@ const WorkflowDesigner: React.FC = () => {
         <MiniMap />
         
         <Panel position="top-left" className="toolbar">
+          <button className="back-button" onClick={() => navigate('/dashboard')}>Back to Dashboard</button>
           <button onClick={() => setShowAddStepModal(true)}>Add Step</button>
           <button onClick={handleSave}>Save Changes</button>
         </Panel>
 
         {selectedNode && (
-          <Panel position="top-right" className="sidebar">
+          <div className="sidebar">
             <div className="sidebar-header">
               <h3>Step Details</h3>
-              <button className="back-button" onClick={() => navigate('/dashboard')}>
-                Back to Dashboard
-              </button>
             </div>
             <div className="step-details">
               <div className="detail-item">
@@ -404,7 +495,7 @@ const WorkflowDesigner: React.FC = () => {
                 <span>${selectedNode.data.budget}</span>
               </div>
             </div>
-          </Panel>
+          </div>
         )}
       </ReactFlow>
 

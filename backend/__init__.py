@@ -35,10 +35,16 @@ def create_app():
     # --- Inicializar Extensões com a App ---
     db.init_app(app) # Associa SQLAlchemy com a app
     rest_api.init_app(app) # Associa Flask-RESTX com a app
-    cors.init_app(app) # <--- 2. Inicialize CORS com a app (configuração básica para dev)
-    # Alternativa mais segura para produção (especificando origem):
-    # cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5173').split(',') # Exemplo
-    # CORS(app, resources={r"/api/*": {"origins": cors_origins}})
+    
+    # Configure CORS with explicit settings
+    cors.init_app(app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:5173"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
+        }
+    })
     
     migrate.init_app(app, db) # Inicializa Migrate aqui
 

@@ -58,16 +58,10 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# Arquivos de Variáveis de Ambiente (MUITO IMPORTANTE)
-.env
-.env.*
-!.env.example
-# Comentar linha abaixo se quiser permitir .env em subpastas (não recomendado)
-*/.env
-*/.env.*
-!*/.env.example
-
 # Arquivos de Teste (dependendo da estrutura)
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Migração DB para AWS
+/dbMigration

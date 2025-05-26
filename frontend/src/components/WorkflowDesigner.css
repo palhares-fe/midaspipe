@@ -1,7 +1,13 @@
 .workflow-designer {
-  width: 100%;
+  position: relative;
+  width: 100vw;
   height: 100vh;
+  min-width: 100vw;
+  min-height: 100vh;
   background-color: #f8f9fa;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 .loading, .error {
@@ -40,11 +46,19 @@
 }
 
 .sidebar {
-  background-color: white;
-  padding: 20px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  min-width: 250px;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 340px;
+  height: 100%;
+  background: #fff;
+  border-left: 1px solid #eee;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.04);
+  z-index: 10;
+  padding: 24px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-header {
