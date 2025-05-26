@@ -425,6 +425,8 @@ const WorkflowDesigner: React.FC = () => {
     }
   };
 
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+
   const handleEditNode = (nodeId: string) => {
     const node = nodes.find((n) => n.id === nodeId);
     if (node) {
@@ -435,8 +437,66 @@ const WorkflowDesigner: React.FC = () => {
         budget: node.data.budget || 0,
         description: node.data.description || '',
       });
+      setEditingNodeId(nodeId);
       setShowAddStepModal(true);
       setContextMenu(null);
+    }
+  };
+
+  const handleUpdateStep = async () => {
+    try {
+      if (!id || id === 'new' || !editingNodeId) return;
+
+      const response = await fetch(`http://localhost:5000/api/journeys/${id}/steps/${editingNodeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newStepData.name,
+          type: newStepData.type,
+          channel: newStepData.channel,
+          budget: newStepData.budget,
+          description: newStepData.description,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update step');
+      }
+
+      const updatedStep = await response.json();
+
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === editingNodeId
+            ? {
+                ...n,
+                type: updatedStep.type,
+                data: {
+                  ...n.data,
+                  label: updatedStep.name,
+                  type: updatedStep.type,
+                  channel: updatedStep.channel,
+                  budget: updatedStep.budget,
+                  description: updatedStep.description,
+                },
+              }
+            : n
+        )
+      );
+      setShowAddStepModal(false);
+      setEditingNodeId(null);
+      setNewStepData({
+        name: '',
+        type: 'default',
+        channel: 'default',
+        budget: 0,
+        description: '',
+      });
+    } catch (err) {
+      console.error('Error updating step:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update step');
     }
   };
 
@@ -572,8 +632,11 @@ const WorkflowDesigner: React.FC = () => {
               />
             </div>
             <div className="modal-actions">
-              <button onClick={handleAddStep}>Save Step</button>
-              <button onClick={() => setShowAddStepModal(false)}>Cancel</button>
+              <button onClick={editingNodeId ? handleUpdateStep : handleAddStep}>Save Step</button>
+              <button onClick={() => {
+                setShowAddStepModal(false);
+                setEditingNodeId(null);
+              }}>Cancel</button>
             </div>
           </div>
         </div>

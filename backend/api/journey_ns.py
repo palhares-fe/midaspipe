@@ -222,6 +222,31 @@ class JourneyConnections(Resource):
 
 @journey_ns.route('/<int:journey_id>/steps/<int:step_id>')
 class JourneyStep(Resource):
+    def put(self, journey_id, step_id):
+        """Update a step in the journey"""
+        journey = Journey.query.get_or_404(journey_id)
+        step = Step.query.filter_by(id=step_id, journey_id=journey_id).first_or_404()
+        data = request.json
+
+        step.name = data.get('name', step.name)
+        step.type = data.get('type', step.type)
+        step.channel = data.get('channel', step.channel)
+        step.budget = data.get('budget', step.budget)
+        step.description = data.get('description', step.description)
+
+        db.session.commit()
+
+        return {
+            'id': step.id,
+            'name': step.name,
+            'type': step.type,
+            'channel': step.channel,
+            'budget': float(step.budget) if step.budget else None,
+            'description': step.description,
+            'pos_x': step.pos_x,
+            'pos_y': step.pos_y
+        }, 200
+    
     def delete(self, journey_id, step_id):
         """Delete a step from the journey"""
         journey = Journey.query.get_or_404(journey_id)
