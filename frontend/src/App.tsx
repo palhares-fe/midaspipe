@@ -1,9 +1,8 @@
 // frontend/src/App.tsx (Exemplo de modificação)
 
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
-import WorkflowDesigner from './components/WorkflowDesigner';
+import WorkflowDesigner from './components/WorkflowDesigner/WorkflowDesigner';
 import './App.css';
 
 function App() {
